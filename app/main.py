@@ -99,11 +99,12 @@ def update_task(task_id: int, update_data: TaskUpdate = Body(...)):
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
+    global tasks
     for i, task in enumerate(tasks):
         if task.id == task_id:
             del tasks[i]
-            return {"detail": " Task with id {task_id} got deleted successfully !"}
-    raise HTTPException(status_code = 404 , detail = "Task not found")
+            return {"detail": "Task deleted"}  
+    raise HTTPException(status_code=404, detail="Task not found")
 
 
 @app.delete("/tasks")
