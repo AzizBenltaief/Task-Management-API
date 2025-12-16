@@ -44,6 +44,19 @@ def task_stats():
     }
 
 
+@app.get("/tasks/filter", response_model=List[Task])
+def filter_tasks(status: Optional[str] = None):  
+    if status is None:
+        raise HTTPException(status_code=400, detail="Query parameter 'status' is required")
+    return [task for task in tasks if task.status == status]
+
+
+@app.get("/tasks/search", response_model=List[Task])
+def get_tasks_by_title(title: Optional[str] = None):  
+    if title is None:
+        raise HTTPException(status_code=400, detail="Query parameter 'title' is required")
+    return [task for task in tasks if title.lower() in task.title.lower()]
+
 @app.get("/tasks/{task_id}", response_model=Task)
 def  get_task(task_id: int):
     for task in tasks:
@@ -52,17 +65,13 @@ def  get_task(task_id: int):
     raise HTTPException(status_code=404,detail = "Task not found")
 
 
-@app.get("/tasks/filter", response_model=List[Task])
-def filter_tasks(status: str):
-    return [task for task in tasks if task.status == status]
-
-
-@app.get("/tasks/search", response_model=List[Task])
-def get_tasks_by_title(title: str):
-    return [task for task in tasks if title.lower() in task.title.lower()]
-
-
-
+@app.post("/tasks", response_model=Task)
+def create_task(task: TaskCreate = Body(...)):
+    global task_id_counter
+    new_task = Task(id=task_id_counter, **task.model_dump()) 
+    tasks.append(new_task)
+    task_id_counter += 1 
+    return new_task
 
 
 @app.patch("/tasks/{task_id}/complete", response_model=Task)
@@ -72,15 +81,6 @@ def complete_task(task_id: int):
             task.status = "completed"
             return task
     raise HTTPException(status_code=404, detail="Task not found")
-
-
-@app.post("/tasks", response_model = Task)
-def create_task(task: TaskCreate = Body(...)):
-    global task_id_counter
-    new_task = Task(id=task_id_counter,**task.dict())
-    tasks.append(new_task)
-    task_id_counter += 1 
-    return new_task
 
 
 @app.put("/tasks/{task_id}", response_model = Task)
