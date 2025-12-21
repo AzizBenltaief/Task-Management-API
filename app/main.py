@@ -1,9 +1,71 @@
-from fastapi import FastAPI,HTTPException,Body
+from fastapi import FastAPI,HTTPException,Body,Request
 from pydantic import BaseModel
 from typing import List,Optional
 import uvicorn
+import logging
+import json
+import time
 
-app = FastAPI(title="Task Management API",description="A simple TODO List API",version="1.0")
+# Observability imports
+from prometheus_fastapi_instrumentator import Instrumentator
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+# Structured JSON logging
+class JSONLogFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "line": record.lineno,
+        }
+        if hasattr(record, "request_info"):
+            log_record.update(record.request_info)
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_record)
+
+# Configure Uvicorn loggers for JSON
+logging.getLogger("uvicorn.access").handlers = [logging.StreamHandler()]
+logging.getLogger("uvicorn.access").propagate = False
+for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error"]:
+    logger = logging.getLogger(logger_name)
+    logger.handlers.clear()
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONLogFormatter())
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+app = FastAPI(title="Task Management API", description="A simple TODO List API", version="1.0")
+
+# Prometheus metrics
+Instrumentator(should_group_status_codes=False).instrument(app).expose(app, endpoint="/metrics")
+
+# OpenTelemetry tracing (console exporter for easy evidence)
+trace.set_tracer_provider(TracerProvider())
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+FastAPIInstrumentor.instrument_app(app)
+
+# Middleware for structured request logs
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    request_info = {
+        "method": request.method,
+        "url": str(request.url),
+        "status_code": response.status_code,
+        "duration_ms": round(duration * 1000, 2),
+        "client_ip": request.client.host if request.client else None,
+    }
+    logging.getLogger("uvicorn.access").info("HTTP request", extra={"request_info": request_info})
+    return response
+
 
 tasks = []
 task_id_counter = 1
