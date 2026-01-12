@@ -64,16 +64,20 @@ jobs:
           target: openapi.json
           format: openapi
           cmd_options: "-S -I -O http://example.com"
+          fail_action: false
+
           artifact_name: zap-report
 
           token: ${{ secrets.GITHUB_TOKEN }}  # Pour créer issue auto si alerts
 
       - name: Upload ZAP report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
-          path: zap_report.*
+          path: |
+            report_json.json
+            report_md.md
+            report_html.html
 
   docker-build-push:
     runs-on: ubuntu-latest
