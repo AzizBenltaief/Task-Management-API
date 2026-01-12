@@ -63,7 +63,10 @@ jobs:
         with:
           target: openapi.json
           format: openapi
-          cmd_options: "-n"
+          cmd_options: "-S -I"
+          artifact_name: zap-report
+
+
 
           token: ${{ secrets.GITHUB_TOKEN }}  # Pour créer issue auto si alerts
 
