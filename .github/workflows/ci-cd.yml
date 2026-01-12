@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: python -m pytest tests/ -v   # Utilise python -m pour éviter command not found
+        run: python -m pytest tests/ -v
 
   sast-bandit:
     runs-on: ubuntu-latest
@@ -59,13 +59,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run OWASP ZAP API Scan (DAST)
-        uses: zaproxy/action-api-scan@v0.10.0   # ← Mise à jour vers la dernière version
+        uses: zaproxy/action-api-scan@v0.10.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}     # Optionnel mais recommandé pour créer issues auto
-          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'  # ← Image correcte !
-          target: 'http://localhost:8000'        # Change si ton API est exposée ailleurs (ex: Minikube)
-          format: openapi                        # Si ton API a /openapi.json exposé
-          cmd_options: '-a'                      # Alert on all (optionnel)
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          target: 'http://localhost:8000'  # Inaccessible en CI → rapport vide mais artifact généré
+          format: openapi
+          cmd_options: '-a'  # Alert on all
+          token: ${{ secrets.GITHUB_TOKEN }}  # Pour créer issue auto si alerts
 
       - name: Upload ZAP report
         if: always()
