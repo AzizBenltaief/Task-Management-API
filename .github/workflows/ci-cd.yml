@@ -63,8 +63,9 @@ jobs:
         with:
           target: openapi.json
           format: openapi
-          cmd_options: "-S -I -O http://example.com"
+          cmd_options: "-S -I -O http://localhost:8000"
           fail_action: false
+
 
           artifact_name: zap-report
 
