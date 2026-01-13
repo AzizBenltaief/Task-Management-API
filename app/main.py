@@ -1,10 +1,11 @@
-from fastapi import FastAPI,HTTPException,Body,Request
+from fastapi import FastAPI,HTTPException,Body,Request, Response
 from pydantic import BaseModel
 from typing import List,Optional
 import uvicorn
 import logging
 import json
 import time
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Observability imports
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -40,8 +41,35 @@ for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error"]:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-app = FastAPI(title="Task Management API", description="A simple TODO List API", version="1.0")
+app = FastAPI(
+    title="Task Management API",
+    description="A simple TODO List API",
+    version="1.0"
+)
 
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        
+        # Spectre vulnerability mitigation
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        
+        # Additional security headers (bonus)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        
+        return response
+
+# Add the middleware
+app.add_middleware(SecurityHeadersMiddleware)
 # Prometheus metrics
 Instrumentator(should_group_status_codes=False).instrument(app).expose(app, endpoint="/metrics")
 
