@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  issues: write
+  security-events: write
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -71,8 +76,20 @@ jobs:
       - name: Start FastAPI application
         run: |
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          sleep 5  # Wait for the app to start
-          curl -f http://localhost:8000/ || exit 1  # Verify it's running
+          sleep 5
+
+      - name: Verify API is running
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/; then
+              echo "✅ API is ready"
+              exit 0
+            fi
+            echo "⏳ Waiting for API... attempt $i"
+            sleep 2
+          done
+          echo "❌ API failed to start"
+          exit 1
 
       - name: OWASP ZAP API Scan
         uses: zaproxy/action-api-scan@v0.10.0
