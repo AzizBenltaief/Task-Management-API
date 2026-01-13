@@ -82,13 +82,13 @@ jobs:
         run: |
           for i in {1..30}; do
             if curl -f http://localhost:8000/; then
-              echo "✅ API is ready"
+              echo "API is ready"
               exit 0
             fi
-            echo "⏳ Waiting for API... attempt $i"
+            echo "Waiting for API... attempt $i"
             sleep 2
           done
-          echo "❌ API failed to start"
+          echo "API failed to start"
           exit 1
 
       - name: OWASP ZAP API Scan
@@ -98,7 +98,6 @@ jobs:
           format: openapi
           cmd_options: "-S -I -O http://localhost:8000"
           fail_action: false
-          artifact_name: zap-report
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload ZAP report
