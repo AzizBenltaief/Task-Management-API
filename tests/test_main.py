@@ -3,7 +3,6 @@ from app.main import app
 
 client = TestClient(app)
 
-# Tests de base (déjà existants, adaptés)
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
@@ -45,7 +44,7 @@ def test_delete_task():
 
 # Nouveaux tests pour tes endpoints ajoutés
 def test_task_summary_empty():
-    client.delete("/tasks")  # assure vide
+    client.delete("/tasks")  
     response = client.get("/tasks/summary")
     assert response.status_code == 200
     assert response.json() == {"total_tasks": 0, "pending_tasks": 0, "completed_tasks": 0}
