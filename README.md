@@ -26,7 +26,6 @@ A lightweight REST API for managing tasks with full DevOps implementation includ
 - ✅ Kubernetes deployment with auto-scaling
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ Security scanning (SAST with Bandit, DAST with OWASP ZAP)
-- ✅ Comprehensive test suite
 
 ## 🛠️ Tech Stack
 
